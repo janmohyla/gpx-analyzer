@@ -278,6 +278,10 @@
   .grad-pill { font-size: 11px; font-weight: 500; padding: 1px 7px; border-radius: var(--r-xs); color: #fff; margin-left: 6px; }
 
   .empty { color: var(--md-on-surface-variant); font-size: 14px; text-align: center; padding: 20px; }
+  .stats .empty, .climbs-grid .empty { grid-column: 1 / -1; }
+  .drop.is-empty .drop-top { justify-content: center; }
+  .drop.is-empty .fname { text-align: center; }
+  .drop.is-empty .sub { display: none; }
 
   footer.notes { color: var(--md-on-surface-variant); font-size: 13px; max-width: 76ch; line-height: 1.55; }
   footer.notes strong { color: var(--md-on-surface); font-weight: 500; }
@@ -472,7 +476,7 @@
       resampleLabel: "Resample spacing",
       resampleDesc: "Re-space both tracks evenly before summing, so point-density differences stop inflating the gain. 0 = use the raw points.",
       smoothLabel: "Smoothing window",
-      smoothDesc: "Moving-average the elevation profile over this distance to kill sensor / DEM jitter. Wider = lower gain.",
+      smoothDesc: "Averages the elevation over this distance to iron out tiny bumps and GPS/altimeter noise before the climb is measured. A wider window = a smoother profile = less total ascent.",
       threshLabel: "Threshold (deadband)",
       threshDesc: "Only count a rise once it exceeds this. This single number is where most tools quietly disagree.",
       presetRaw: "Raw (no cleanup)", presetBalanced: "Balanced", presetGarmin: "Garmin-ish (hot)", presetMapy: "Mapy-ish (smooth)",
@@ -499,11 +503,11 @@
       tracksTitle: "Trasy", tracksHint: "přetáhněte nebo klikněte (nic neopustí váš prohlížeč)",
       routeA: "Trasa A", routeB: "Trasa B", required: "Povinné", optional: "Volitelné", remove: "Odebrat", infoAria: "Co to dělá?",
       dropPrompt: "Přetáhněte soubor GPX…", pts: "bodů", readErr: "Soubor se nepodařilo načíst",
-      knobsTitle: "Parametry výpočtu", knobsHint: "použity shodně na obě trasy",
+      knobsTitle: "Parametry výpočtu", knobsHint: "použito shodně na obě trasy",
       resampleLabel: "Krok převzorkování",
       resampleDesc: "Rozmístí body obou tras rovnoměrně před součtem, aby rozdílná hustota bodů uměle nenavyšovala převýšení. 0 = použít původní body.",
       smoothLabel: "Okno vyhlazení",
-      smoothDesc: "Klouzavý průměr výškového profilu na této vzdálenosti potlačí šum senzoru / DEM. Širší okno = nižší převýšení.",
+      smoothDesc: "Zprůměruje výšku na této vzdálenosti a vyhladí tak drobné nerovnosti a šum GPS/výškoměru ještě před výpočtem stoupání. Širší okno = hladší profil = nižší celkové převýšení.",
       threshLabel: "Práh (necitlivost)",
       threshDesc: "Stoupání se započítá, až když překročí tuto hodnotu. Právě v tomto jediném čísle se nástroje nejčastěji potají rozcházejí.",
       presetRaw: "Surová data (bez úprav)", presetBalanced: "Vyvážené", presetGarmin: "Ve stylu Garminu (vyšší)", presetMapy: "Ve stylu Mapy.cz (vyhlazené)",
@@ -639,7 +643,8 @@
     for (const slot of ["A", "B"]) {
       const m = state["meta" + slot];
       $("name" + slot).textContent = m ? m.title : t("dropPrompt");
-      $("sub" + slot).textContent = m ? (m.file + " · " + m.pts + " " + t("pts")) : "—";
+      $("sub" + slot).textContent = m ? (m.file + " · " + m.pts + " " + t("pts")) : "";
+      $("drop" + slot).classList.toggle("is-empty", !m);
     }
     $("clearB").hidden = !state.metaB;
   }
@@ -789,7 +794,7 @@
   function gradColor(g) { const stops = [[3, "#8a9a3f"], [4, "#c8a12e"], [5, "#d98a2b"], [6, "#d9662b"], [7, "#cf4b2f"], [8, "#c0303f"]]; let c = stops[0][1]; for (const [g0, col] of stops) if (g >= g0) c = col; return c; }
   function renderClimbs() {
     const box = $("climbs"), tracks = [["A", state.A], ["B", state.B]].filter(x => x[1]);
-    if (!tracks.length) { box.innerHTML = `<div class="empty">—</div>`; return; }
+    if (!tracks.length) { box.innerHTML = `<div class="empty">${t("loadTrack")}</div>`; return; }
     box.innerHTML = tracks.map(([k, tr]) => {
       const maxD = tr.distKm;
       const bands = tr.climbs.map(c => `<div class="band" title="${nf(uDist(c.start), 1)}–${nf(uDist(c.end), 1)} ${distU()} · +${nf(Math.round(uEle(c.gain)))} ${eleU()} · ${c.avg.toFixed(1)}%" style="left:${(c.start / maxD) * 100}%;width:${Math.max(.6, ((c.end - c.start) / maxD) * 100)}%;background:${gradColor(c.avg)}"></div>`).join("");
