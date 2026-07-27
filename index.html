@@ -127,6 +127,26 @@
   .app-bar .brand h1 { margin: 0; color: var(--md-on-surface); }
   .app-bar .actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
+  /* MD3 outlined "pill" button (PDF export) */
+  .pill-btn { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px 0 14px; border: 1px solid var(--md-outline); border-radius: var(--r-full); background: transparent; color: var(--md-on-surface); font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
+  .pill-btn svg { width: 18px; height: 18px; }
+  .pill-btn::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--md-on-surface); opacity: 0; transition: opacity .12s; }
+  .pill-btn:hover::before { opacity: .08; }
+  .pill-btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+  .pill-btn:disabled { opacity: .55; cursor: default; }
+  .pill-btn:disabled::before { opacity: 0; }
+
+  /* header icon button (PNG export) */
+  .hd-right { display: flex; align-items: center; gap: 12px; }
+  .icon-btn { position: relative; display: grid; place-items: center; width: 32px; height: 32px; border: none; border-radius: var(--r-full); background: transparent; color: var(--md-on-surface-variant); cursor: pointer; padding: 0; flex: none; }
+  .icon-btn svg { width: 18px; height: 18px; }
+  .icon-btn::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--md-on-surface); opacity: 0; transition: opacity .12s; }
+  .icon-btn:hover { color: var(--md-on-surface); }
+  .icon-btn:hover::before { opacity: .08; }
+  .icon-btn:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+  .icon-btn:disabled { opacity: .4; cursor: default; }
+  .icon-btn:disabled::before { opacity: 0; }
+
   /* MD3 segmented button */
   .segmented { display: inline-flex; border: 1px solid var(--md-outline); border-radius: var(--r-full); overflow: hidden; height: 40px; }
   .segmented .seg {
@@ -311,6 +331,10 @@
     <h1 class="t-title-l" data-i18n="appTitle">Ascent Comparator</h1>
   </div>
   <div class="actions">
+    <button type="button" class="pill-btn" id="pdfBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+      <span data-i18n="exportPdf">PDF</span>
+    </button>
     <div class="segmented" role="group" id="unitGroup" aria-label="units">
       <button class="seg" data-unit="metric" aria-pressed="true">
         <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
@@ -438,10 +462,13 @@
   <!-- profile -->
   <div class="card">
     <div class="hd"><h2 class="t-title-m" data-i18n="profTitle">Elevation profile</h2>
-      <div class="legend">
-        <span class="item"><span class="line a"></span> A</span>
-        <span class="item"><span class="line b"></span> B</span>
-        <span class="item"><span class="line steep"></span> <span data-i18n="legRamp"></span></span>
+      <div class="hd-right">
+        <div class="legend">
+          <span class="item"><span class="line a"></span> A</span>
+          <span class="item"><span class="line b"></span> B</span>
+          <span class="item"><span class="line steep"></span> <span data-i18n="legRamp"></span></span>
+        </div>
+        <button type="button" class="icon-btn" id="pngProfile" title="PNG"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10m0 0l-3.5-3.5M12 14l3.5-3.5M5 19h14"/></svg></button>
       </div>
     </div>
     <div class="bd"><div class="chart-shell"><canvas id="profile" height="320"></canvas><div class="tip num" id="tip"></div></div></div>
@@ -450,7 +477,10 @@
   <!-- map -->
   <div class="card">
     <div class="hd"><h2 class="t-title-m" data-i18n="mapTitle">Route map</h2>
-      <button type="button" class="chip" id="basemapBtn" aria-pressed="false">Show basemap</button>
+      <div class="hd-right">
+        <button type="button" class="chip" id="basemapBtn" aria-pressed="false">Show basemap</button>
+        <button type="button" class="icon-btn" id="pngMap" title="PNG"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10m0 0l-3.5-3.5M12 14l3.5-3.5M5 19h14"/></svg></button>
+      </div>
     </div>
     <div class="bd">
       <div class="map-shell">
@@ -469,7 +499,12 @@
 
   <!-- climbs -->
   <div class="card">
-    <div class="hd"><h2 class="t-title-m" data-i18n="climbsTitle">Where the climbing lives</h2><span class="hint" data-i18n="climbsHint"></span></div>
+    <div class="hd"><h2 class="t-title-m" data-i18n="climbsTitle">Where the climbing lives</h2>
+      <div class="hd-right">
+        <span class="hint" data-i18n="climbsHint"></span>
+        <button type="button" class="icon-btn" id="pngClimbs" title="PNG"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10m0 0l-3.5-3.5M12 14l3.5-3.5M5 19h14"/></svg></button>
+      </div>
+    </div>
     <div class="bd"><div class="climbs-grid" id="climbs"></div></div>
   </div>
 
@@ -512,6 +547,7 @@
       profTitle: "Elevation profile", legRamp: "≥8% ramp", loadTrack: "load a track",
       mapTitle: "Route map", showBasemap: "Show basemap", hideBasemap: "Hide basemap",
       mapNote: "Route shape is drawn locally. The basemap loads map tiles from OpenStreetMap — only when you show it.",
+      exportPdf: "PDF", pdfWorking: "Building…", pdfError: "Sorry — the PDF couldn’t be generated.", exportPng: "Download as PNG",
       sensTitle: "Gain vs. threshold", sensHint: "how far the “total ascent” claim depends on one knob",
       sensX: "deadband threshold →",
       climbsTitle: "Where the climbing lives", climbsHint: "climbs ≥20 m, placed at their real distance",
@@ -545,6 +581,7 @@
       profTitle: "Výškový profil", legRamp: "úsek ≥8 %", loadTrack: "načtěte trasu",
       mapTitle: "Mapa trasy", showBasemap: "Zobrazit podkladovou mapu", hideBasemap: "Skrýt podkladovou mapu",
       mapNote: "Tvar trasy se vykresluje lokálně. Podkladová mapa načítá dlaždice z OpenStreetMap — pouze když ji zobrazíte.",
+      exportPdf: "PDF", pdfWorking: "Vytvářím…", pdfError: "Omlouváme se — PDF se nepodařilo vytvořit.", exportPng: "Stáhnout jako PNG",
       sensTitle: "Převýšení vs. práh", sensHint: "jak moc údaj o „celkovém převýšení“ závisí na jediném parametru",
       sensX: "práh necitlivosti →",
       climbsTitle: "Kde se stoupá", climbsHint: "stoupání ≥20 m, umístěná dle skutečné vzdálenosti",
@@ -663,6 +700,7 @@
       if (/[<&]/.test(val)) el.innerHTML = val; else el.textContent = val;
     });
     document.querySelectorAll(".info-dot").forEach(b => b.setAttribute("aria-label", t("infoAria")));
+    document.querySelectorAll(".icon-btn").forEach(b => { b.setAttribute("aria-label", t("exportPng")); b.title = t("exportPng"); });
     renderDropLabels();
     updateKnobLabels();
     updateStatHint();
@@ -693,31 +731,35 @@
   }
 
   // ---------------- stats ----------------
-  function renderStats() {
-    const box = $("stats"), A = state.A, B = state.B;
-    if (!A && !B) { box.innerHTML = `<div class="empty">${t("loadTrack")}</div>`; return; }
-    const perU = t("mAscentPer") + " / " + distU();
-    const rows = [
+  function statRows() {
+    const A = state.A, B = state.B;
+    const defs = [
       { label: t("mDistance"), get: a => uDist(a.distKm), fmt: v => nf(v, 1) + " " + distU(), delta: true, dd: 1 },
       { label: t("mAscent"), get: a => uEle(a.gain), fmt: v => nf(v) + " " + eleU(), delta: true, dd: 0 },
       { label: t("mDescent"), get: a => uEle(a.loss), fmt: v => nf(v) + " " + eleU(), delta: false },
-      { label: perU, get: a => uEle(a.gain) / uDist(a.distKm), fmt: v => nf(v) + " " + eleU(), delta: true, dd: 0 },
+      { label: t("mAscentPer") + " / " + distU(), get: a => uEle(a.gain) / uDist(a.distKm), fmt: v => nf(v) + " " + eleU(), delta: true, dd: 0 },
       { label: t("mAltRange"), raw: a => nf(Math.round(uEle(a.eMin))) + "–" + nf(Math.round(uEle(a.eMax))) + " " + eleU(), delta: false },
       { label: t("mClimbs") + " (≥" + knobText(20, 0) + ")", get: a => a.climbs.length, fmt: v => nf(v), delta: false }
     ];
+    return defs.map(r => {
+      const cell = a => a ? (r.raw ? r.raw(a) : r.fmt(r.get(a))) : "—";
+      let d = "—", dCls = "";
+      if (A && B && r.delta) { const dv = r.get(B) - r.get(A); dCls = dv > 0 ? "up" : dv < 0 ? "down" : ""; d = (dv > 0 ? "+" : "") + nf(dv, r.dd || 0); }
+      return { label: r.label, a: cell(A), b: cell(B), d, dCls };
+    });
+  }
+  function renderStats() {
+    const box = $("stats");
+    if (!state.A && !state.B) { box.innerHTML = `<div class="empty">${t("loadTrack")}</div>`; return; }
     let h = `<div class="cell head measure">${t("measure")}</div>`;
     h += `<div class="cell head n"><span class="dot a"></span>${t("colA")}</div>`;
     h += `<div class="cell head n"><span class="dot b"></span>${t("colB")}</div>`;
     h += `<div class="cell head n">${t("colDelta")}</div>`;
-    for (const r of rows) {
-      const cellVal = a => a ? (r.raw ? r.raw(a) : r.fmt(r.get(a))) : "—";
+    for (const r of statRows()) {
       h += `<div class="cell measure">${r.label}</div>`;
-      h += `<div class="cell n num">${cellVal(A)}</div>`;
-      h += `<div class="cell n num">${cellVal(B)}</div>`;
-      if (A && B && r.delta) {
-        const dv = r.get(B) - r.get(A), cls = dv > 0 ? "up" : dv < 0 ? "down" : "", sign = dv > 0 ? "+" : "";
-        h += `<div class="cell n num"><span class="delta ${cls}">${sign}${nf(dv, r.dd || 0)}</span></div>`;
-      } else h += `<div class="cell n num">—</div>`;
+      h += `<div class="cell n num">${r.a}</div>`;
+      h += `<div class="cell n num">${r.b}</div>`;
+      h += `<div class="cell n num"><span class="delta ${r.dCls}">${r.d}</span></div>`;
     }
     box.innerHTML = h;
   }
@@ -730,11 +772,12 @@
 
   let profGeo = null;
   function drawProfile() {
-    const cv = $("profile"), setup = setupCanvas(cv, 320);
-    if (!setup) return;
-    const { ctx, w, h } = setup;
+    const setup = setupCanvas($("profile"), 320); if (!setup) return;
+    drawProfileInto(setup.ctx, setup.w, setup.h, true);
+  }
+  function drawProfileInto(ctx, w, h, interactive) {
     const tracks = [state.A, state.B].filter(Boolean);
-    if (!tracks.length) { profGeo = null; softMsg(ctx, w, h, t("loadTrack")); return; }
+    if (!tracks.length) { if (interactive) profGeo = null; softMsg(ctx, w, h, t("loadTrack")); return; }
     const pad = { l: 52, r: 14, t: 14, b: 26 }, W = w - pad.l - pad.r, H = h - pad.t - pad.b;
     const maxD = Math.max(...tracks.map(x => x.distKm));
     let eMin = Math.min(...tracks.map(x => x.eMin)), eMax = Math.max(...tracks.map(x => x.eMax));
@@ -770,7 +813,7 @@
         if (((tr.es[i] - tr.es[i - 1]) / dd) * 100 >= 8) { ctx.beginPath(); ctx.moveTo(X(tr.dKm[i - 1]), Y(tr.es[i - 1])); ctx.lineTo(X(tr.dKm[i]), Y(tr.es[i])); ctx.stroke(); }
       }
     }
-    profGeo = { pad, W, H, maxD, eMin, eMax, X, Y, w, h };
+    if (interactive) profGeo = { pad, W, H, maxD, eMin, eMax, X, Y, w, h };
   }
 
   function interp(xs, ys, x) {
@@ -801,9 +844,10 @@
   $("profile").addEventListener("mouseleave", () => { tip.style.opacity = 0; drawProfile(); mapHoverKm = null; updateMapHover(); });
 
   function drawSens() {
-    const cv = $("sens"), setup = setupCanvas(cv, 240);
-    if (!setup) return;
-    const { ctx, w, h } = setup;
+    const setup = setupCanvas($("sens"), 240); if (!setup) return;
+    drawSensInto(setup.ctx, setup.w, setup.h);
+  }
+  function drawSensInto(ctx, w, h) {
     const tracks = [["A", state.A], ["B", state.B]].filter(x => x[1]);
     if (!tracks.length) { softMsg(ctx, w, h, t("loadTrack")); return; }
     const ths = []; for (let x = 0; x <= 10; x += 0.5) ths.push(x);
@@ -852,7 +896,10 @@
 
   let mapHoverKm = null;
   function drawMapCanvas() {
-    const cv = $("mapCanvas"), setup = setupCanvas(cv, 360); if (!setup) return; const { ctx, w, h } = setup;
+    const setup = setupCanvas($("mapCanvas"), 360); if (!setup) return;
+    drawMapInto(setup.ctx, setup.w, setup.h, true);
+  }
+  function drawMapInto(ctx, w, h, showHover) {
     const geos = [["A", state.geoA], ["B", state.geoB]].filter(x => x[1]);
     if (!geos.length) { softMsg(ctx, w, h, t("loadTrack")); return; }
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -871,7 +918,7 @@
       ctx.fillStyle = css(k === "A" ? "--a" : "--b");
       for (const idx of [0, pts.length - 1]) { ctx.beginPath(); ctx.arc(X(pts[idx].x), Y(pts[idx].y), 4, 0, 7); ctx.fill(); }
     }
-    if (mapHoverKm != null) {
+    if (showHover && mapHoverKm != null) {
       for (const [k, g] of geos) {
         const p = geoAt(g, mapHoverKm * 1000), m = merc(p.lat, p.lon);
         ctx.fillStyle = css(k === "A" ? "--a" : "--b"); ctx.strokeStyle = css("--md-surface"); ctx.lineWidth = 2;
@@ -914,7 +961,7 @@
   async function initLeaflet() {
     await loadLeaflet();
     lmap = L.map("leaflet", { zoomControl: true });
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" }).addTo(lmap);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, crossOrigin: true, attribution: "© OpenStreetMap contributors" }).addTo(lmap);
     lInit = true; rebuildLeafletRoutes();
   }
   function updateBasemapBtn() { $("basemapBtn").textContent = basemapOn ? t("hideBasemap") : t("showBasemap"); }
@@ -940,8 +987,177 @@
   }
   function updateMapHover() { if (basemapOn && lmap) updateLeafletMarker(); else drawMapCanvas(); }
 
+  // ---------------- export (PNG per section + A4 PDF report) ----------------
+  const EX = { profile: [1120, 340], sens: [1120, 260], map: [960, 660] };
+  function roundRect(ctx, x, y, w, h, r) {
+    if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); return; }
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  function renderToCanvas(core, w, h, scale, bg) {
+    scale = scale || 2.5;
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(w * scale); cv.height = Math.round(h * scale);
+    const ctx = cv.getContext("2d"); ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    ctx.fillStyle = css(bg || "--md-s-low") || "#fff"; ctx.fillRect(0, 0, w, h);
+    core(ctx, w, h);
+    return cv;
+  }
+  function downloadBlob(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  function downloadCanvas(cv, name) { cv.toBlob(b => downloadBlob(b, name), "image/png"); }
+  function fileBase() {
+    const n = (state.metaA && state.metaA.title) || "gpx-route";
+    return n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "gpx-route";
+  }
+
+  function climbsTracks() { return [["A", state.A], ["B", state.B]].filter(x => x[1]); }
+  function climbsExportHeight() { let h = 20; for (const [, tr] of climbsTracks()) h += 22 + 22 + 16 + tr.climbs.length * 22 + 22; return Math.max(140, h + 8); }
+  function drawClimbsInto(ctx, w, h) {
+    const tracks = climbsTracks();
+    if (!tracks.length) { softMsg(ctx, w, h, t("loadTrack")); return; }
+    const padX = 20; let y = 20; ctx.textBaseline = "alphabetic";
+    for (const [k, tr] of tracks) {
+      ctx.fillStyle = css(k === "A" ? "--a" : "--b"); ctx.beginPath(); ctx.arc(padX + 5, y + 4, 5, 0, 7); ctx.fill();
+      ctx.fillStyle = css("--md-on-surface"); ctx.font = "600 14px Roboto, sans-serif"; ctx.textAlign = "left";
+      ctx.fillText(`${t("route" + k)} — ${tr.name || t("unnamed")} · ${nf(uDist(tr.distKm), 1)} ${distU()}`, padX + 18, y + 9);
+      y += 22;
+      const barW = w - 2 * padX, barH = 22;
+      ctx.fillStyle = css("--md-s"); roundRect(ctx, padX, y, barW, barH, 6); ctx.fill();
+      for (const c of tr.climbs) { const x0 = padX + (c.start / tr.distKm) * barW, ww = Math.max(2, ((c.end - c.start) / tr.distKm) * barW); ctx.fillStyle = gradColor(c.avg); ctx.fillRect(x0, y, ww, barH); }
+      ctx.strokeStyle = css("--md-outline-variant"); ctx.lineWidth = 1; roundRect(ctx, padX, y, barW, barH, 6); ctx.stroke();
+      y += barH + 16;
+      const byPos = tr.climbs.slice().sort((a, b) => a.start - b.start);
+      for (const c of byPos) {
+        const by = y + 13;
+        ctx.font = "13px Roboto, sans-serif"; ctx.fillStyle = css("--md-on-surface-variant"); ctx.textAlign = "left";
+        ctx.fillText(`${nf(uDist(c.start), 1)} ${distU()}`, padX, by);
+        ctx.fillText(`${nf(Math.round(uEle(c.len * 1000)))} ${eleU()} · ${t("avg")} ${c.avg.toFixed(1)}%`, padX + 96, by);
+        const pillW = 40, pillH = 16, pillX = w - padX - pillW, pillY = y + 2;
+        ctx.fillStyle = gradColor(c.maxg); roundRect(ctx, pillX, pillY, pillW, pillH, 4); ctx.fill();
+        ctx.fillStyle = "#fff"; ctx.font = "600 11px Roboto, sans-serif"; ctx.textAlign = "center"; ctx.fillText(`${c.maxg.toFixed(0)}%`, pillX + pillW / 2, by);
+        ctx.font = "600 13px Roboto, sans-serif"; ctx.fillStyle = css("--md-on-surface"); ctx.textAlign = "right"; ctx.fillText(`+${nf(Math.round(uEle(c.gain)))} ${eleU()}`, pillX - 10, by);
+        ctx.strokeStyle = css("--md-outline-variant"); ctx.globalAlpha = .5; ctx.beginPath(); ctx.moveTo(padX, y + 21); ctx.lineTo(w - padX, y + 21); ctx.stroke(); ctx.globalAlpha = 1;
+        y += 22;
+      }
+      y += 22;
+    }
+  }
+
+  function tableExportHeight() { return 32 + statRows().length * 34 + 12; }
+  function drawTableInto(ctx, w, h) {
+    const rows = statRows(), padX = 20; let y = 8;
+    const xA = w * 0.60, xB = w * 0.80, xD = w - padX;
+    ctx.textBaseline = "alphabetic";
+    ctx.font = "600 12px Roboto, sans-serif"; ctx.fillStyle = css("--md-on-surface-variant");
+    ctx.textAlign = "left"; ctx.fillText(t("measure").toUpperCase(), padX, y + 14);
+    ctx.textAlign = "right"; ctx.fillText(t("colA"), xA, y + 14); ctx.fillText(t("colB"), xB, y + 14); ctx.fillText(t("colDelta"), xD, y + 14);
+    y += 24; ctx.strokeStyle = css("--md-outline"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(w - padX, y); ctx.stroke();
+    for (const r of rows) {
+      const by = y + 22;
+      ctx.font = "14px Roboto, sans-serif"; ctx.fillStyle = css("--md-on-surface-variant"); ctx.textAlign = "left"; ctx.fillText(r.label, padX, by);
+      ctx.font = "600 14px Roboto, sans-serif"; ctx.fillStyle = css("--md-on-surface"); ctx.textAlign = "right"; ctx.fillText(r.a, xA, by); ctx.fillText(r.b, xB, by);
+      ctx.fillStyle = r.dCls === "up" ? css("--steep") : r.dCls === "down" ? css("--b") : css("--md-on-surface-variant"); ctx.fillText(r.d, xD, by);
+      y += 34; ctx.strokeStyle = css("--md-outline-variant"); ctx.globalAlpha = .6; ctx.beginPath(); ctx.moveTo(padX, y - 6); ctx.lineTo(w - padX, y - 6); ctx.stroke(); ctx.globalAlpha = 1;
+    }
+  }
+  function drawHeaderInto(ctx, w, h) {
+    const padX = 20; ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = css("--md-on-surface"); ctx.font = "700 26px Roboto, sans-serif"; ctx.textAlign = "left"; ctx.fillText(t("appTitle"), padX, 34);
+    ctx.fillStyle = css("--md-on-surface-variant"); ctx.font = "14px Roboto, sans-serif";
+    const sub = [state.metaA && state.metaA.title, state.metaB && state.metaB.title].filter(Boolean).join("   •   ");
+    ctx.fillText(sub, padX, 58);
+    ctx.textAlign = "right"; ctx.fillText(new Date().toLocaleDateString(loc()), w - padX, 34);
+  }
+
+  // composite the live Leaflet basemap (tiles + routes) into an untainted canvas
+  function compositeBasemap() {
+    return new Promise(res => {
+      try {
+        const mapEl = $("leaflet"), rect = mapEl.getBoundingClientRect(), scale = 2;
+        const cv = document.createElement("canvas"); cv.width = Math.round(rect.width * scale); cv.height = Math.round(rect.height * scale);
+        const ctx = cv.getContext("2d"); ctx.setTransform(scale, 0, 0, scale, 0, 0);
+        ctx.fillStyle = css("--md-s") || "#e8ebe4"; ctx.fillRect(0, 0, rect.width, rect.height);
+        for (const im of mapEl.querySelectorAll("img.leaflet-tile")) {
+          if (!im.complete || !im.naturalWidth) continue;
+          const r = im.getBoundingClientRect();
+          ctx.globalAlpha = parseFloat(getComputedStyle(im).opacity) || 1;
+          ctx.drawImage(im, r.left - rect.left, r.top - rect.top, r.width, r.height);
+        }
+        ctx.globalAlpha = 1;
+        for (const [k, g] of [["A", state.geoA], ["B", state.geoB]]) {
+          if (!g) continue;
+          ctx.strokeStyle = css(k === "A" ? "--a" : "--b"); ctx.lineWidth = 3; ctx.lineJoin = "round"; ctx.lineCap = "round";
+          ctx.beginPath(); g.lat.forEach((la, i) => { const p = lmap.latLngToContainerPoint([la, g.lon[i]]); i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); }); ctx.stroke();
+        }
+        const label = "© OpenStreetMap contributors";
+        ctx.font = "11px Roboto, sans-serif"; ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+        const tw = ctx.measureText(label).width;
+        ctx.fillStyle = "rgba(255,255,255,.72)"; ctx.fillRect(rect.width - tw - 10, rect.height - 17, tw + 10, 15);
+        ctx.fillStyle = "#333"; ctx.fillText(label, rect.width - 4, rect.height - 4);
+        cv.getContext("2d").getImageData(0, 0, 1, 1); // throws if tainted
+        res(cv);
+      } catch (e) { res(null); }
+    });
+  }
+  async function mapExportCanvas() {
+    if (basemapOn && lmap) { const c = await compositeBasemap(); if (c) return c; }
+    return renderToCanvas((ctx, w, h) => drawMapInto(ctx, w, h, false), EX.map[0], EX.map[1], 2.5);
+  }
+
+  function exportProfilePng() { if (!(state.A || state.B)) return; downloadCanvas(renderToCanvas((c, w, h) => drawProfileInto(c, w, h, false), EX.profile[0], EX.profile[1], 2.5), fileBase() + "-elevation.png"); }
+  function exportClimbsPng() { if (!(state.A || state.B)) return; downloadCanvas(renderToCanvas(drawClimbsInto, 1120, climbsExportHeight(), 2.5), fileBase() + "-climbs.png"); }
+  async function exportMapPng() { if (!(state.geoA || state.geoB)) return; const cv = await mapExportCanvas(); if (cv) downloadCanvas(cv, fileBase() + "-map.png"); }
+
+  let jspdfReq = null;
+  function loadJsPDF() {
+    if (window.jspdf) return Promise.resolve();
+    if (jspdfReq) return jspdfReq;
+    jspdfReq = new Promise((res, rej) => { const s = document.createElement("script"); s.src = "vendor/jspdf/jspdf.umd.min.js"; s.onload = () => res(); s.onerror = () => rej(new Error("jspdf failed")); document.head.appendChild(s); });
+    return jspdfReq;
+  }
+  async function exportPdf() {
+    if (!(state.A || state.B)) return;
+    const btn = $("pdfBtn"), span = btn.querySelector("span"), orig = span.textContent;
+    btn.disabled = true; span.textContent = t("pdfWorking");
+    try {
+      await loadJsPDF();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
+      const W = 210, H = 297, M = 12, cw = W - 2 * M; let y = M;
+      const place = (cv, gap) => {
+        if (!cv) return; let iw = cw, ih = cw * (cv.height / cv.width); const maxH = H - 2 * M;
+        if (ih > maxH) { ih = maxH; iw = maxH * (cv.width / cv.height); }
+        if (y + ih > H - M) { doc.addPage(); y = M; }
+        doc.addImage(cv.toDataURL("image/png"), "PNG", M, y, iw, ih, undefined, "FAST"); y += ih + (gap == null ? 4 : gap);
+      };
+      const titleStrip = title => renderToCanvas((ctx, w, h) => { ctx.fillStyle = css("--md-on-surface"); ctx.font = "700 26px Roboto, sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(title, 6, h / 2); }, 1120, 38, 2, "--md-surface");
+      const section = async (title, cvP, gap) => {
+        const cv = await cvP; if (!cv) return;
+        const ts = titleStrip(title), tH = cw * (ts.height / ts.width), iH = cw * (cv.height / cv.width);
+        if (y + tH + 2 + Math.min(iH, H - 2 * M) > H - M) { doc.addPage(); y = M; }
+        place(ts, 1); place(cv, gap);
+      };
+      place(renderToCanvas(drawHeaderInto, 1120, 78, 2, "--md-surface"), 4);
+      await section(t("compTitle"), Promise.resolve(renderToCanvas(drawTableInto, 1120, tableExportHeight(), 2, "--md-surface")), 7);
+      await section(t("profTitle"), Promise.resolve(renderToCanvas((c, w, h) => drawProfileInto(c, w, h, false), EX.profile[0], EX.profile[1], 2)), 7);
+      await section(t("mapTitle"), mapExportCanvas(), 7);
+      await section(t("sensTitle"), Promise.resolve(renderToCanvas(drawSensInto, EX.sens[0], EX.sens[1], 2)), 7);
+      await section(t("climbsTitle"), Promise.resolve(renderToCanvas(drawClimbsInto, 1120, climbsExportHeight(), 2)), 7);
+      doc.save(fileBase() + "-report.pdf");
+    } catch (e) { console.error(e); alert(t("pdfError")); }
+    finally { btn.disabled = false; span.textContent = orig; }
+  }
+
   // ---------------- orchestration ----------------
-  function renderAll() { renderStats(); drawProfile(); drawSens(); renderClimbs(); updateStatHint(); }
+  function updateExportButtons() {
+    const has = !!(state.A || state.B);
+    $("pdfBtn").disabled = $("pngProfile").disabled = $("pngClimbs").disabled = !has;
+    $("pngMap").disabled = !(state.geoA || state.geoB);
+  }
+  function renderAll() { renderStats(); drawProfile(); drawSens(); renderClimbs(); updateStatHint(); updateExportButtons(); }
   function recompute() { state.A = state.rawA ? process(state.rawA) : null; state.B = state.rawB ? process(state.rawB) : null; renderAll(); }
 
   // ---------------- wiring ----------------
@@ -985,6 +1201,10 @@
     renderDropLabels(); recompute(); renderMap();
   });
   $("basemapBtn").addEventListener("click", toggleBasemap);
+  $("pdfBtn").addEventListener("click", exportPdf);
+  $("pngProfile").addEventListener("click", exportProfilePng);
+  $("pngMap").addEventListener("click", exportMapPng);
+  $("pngClimbs").addEventListener("click", exportClimbsPng);
 
   // (i) info tooltips: hover is CSS-only; click/tap toggles (touch devices have no hover)
   const infoDots = [...document.querySelectorAll(".info-dot")];

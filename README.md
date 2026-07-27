@@ -51,6 +51,11 @@ it samples more densely, and it uses a smaller deadband — all three push the n
   on the map.
 - **English / Čeština** toggle (flags, top right) and a **Metric / Imperial** segmented control;
   both preferences persist. Numbers format to the active locale (e.g. `1 204 m` vs `1,204 m`).
+- **Export**: each section (elevation profile, route map, climb distribution) has a **download-PNG**
+  button (crisp 2–3× raster); the map exports whatever it's showing (offline shape or the tiled
+  basemap, composited untainted from the CORS-enabled OSM tiles). A **PDF** button builds a
+  one-click **A4-portrait report** — deterministic layout, no print dialog. Text is rasterised via
+  Roboto so Czech diacritics render correctly.
 
 ![Route map with the OpenStreetMap basemap](docs/screenshot-map.png)
 
@@ -82,11 +87,15 @@ python3 -m http.server 8000   # then visit http://localhost:8000
 - **Leaflet** is vendored in `vendor/leaflet/` (BSD-2-Clause) and loaded lazily; the basemap uses
   keyless OpenStreetMap raster tiles (© OpenStreetMap contributors), fetched only when shown. So
   your GPX files never leave the browser, and the only optional external request is map tiles.
+- **jsPDF** is vendored in `vendor/jspdf/` (MIT) and loaded lazily, only when you export a PDF.
+  Section images and the PDF are rendered from the same canvas "core" draw functions, so exports
+  match the screen exactly.
 
 ## Roadmap
 
 - [ ] Re-drape both tracks over a common DEM via an elevation API (compare routes, not sources)
-- [ ] Export the comparison as PNG / CSV
+- [x] Export sections as PNG and the report as an A4 PDF
+- [ ] CSV export of the per-climb table
 - [ ] Optional Python port of the gain algorithm for batch processing
 
 ## Licence
