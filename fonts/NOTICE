@@ -1,0 +1,13 @@
+Roboto
+Copyright 2011 The Roboto Project Authors (https://github.com/googlefonts/roboto)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use these font files except in compliance with the License.
+You may obtain a copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+The .woff2 files in this directory are the `latin` and `latin-ext` subsets
+(weights 400/500/700) as redistributed by the Fontsource project
+(https://fontsource.org/fonts/roboto). They are bundled here so the app runs
+fully offline with correct Czech (Latin-Extended) coverage.

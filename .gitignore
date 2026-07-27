@@ -2,3 +2,6 @@
 node_modules/
 *.log
 _check.js
+# scratch/probe artefacts
+docs/_*.png
+_*.mjs
