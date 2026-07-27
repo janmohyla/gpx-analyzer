@@ -45,8 +45,14 @@ it samples more densely, and it uses a smaller deadband — all three push the n
 - **Elevation profile** overlay with ≥8% ramps highlighted and a hover crosshair.
 - **Gain-vs-threshold** sensitivity chart: see how fragile the "total ascent" claim is to one knob.
 - **Climb distribution**: named climbs (≥20 m) placed at their real distance, coloured by gradient.
+- **Route map**: both routes drawn locally as a shape (offline, no requests) so you can see where
+  the alternatives diverge, with an opt-in **Show basemap** button that lazy-loads an
+  OpenStreetMap basemap only when you ask. Hovering the elevation profile drops a synced marker
+  on the map.
 - **English / Čeština** toggle (flags, top right) and a **Metric / Imperial** segmented control;
   both preferences persist. Numbers format to the active locale (e.g. `1 204 m` vs `1,204 m`).
+
+![Route map with the OpenStreetMap basemap](docs/screenshot-map.png)
 
 <p align="center">
   <img src="docs/screenshot-cs-imperial.png" width="49%" alt="Czech, imperial units">
@@ -70,9 +76,12 @@ python3 -m http.server 8000   # then visit http://localhost:8000
 
 - **Material Design 3** tokens (seed: terrain green), full light + dark schemes.
 - **Roboto**, self-hosted in `fonts/` with the `latin` + `latin-ext` subsets so Czech diacritics
-  (č, ř, ž, ě, š, ů…) render correctly in both the UI and in GPX track/file names. No web-font CDN,
-  so the app stays fully offline.
-- Charts drawn on `<canvas>`; no runtime dependencies.
+  (č, ř, ž, ě, š, ů…) render correctly in both the UI and in GPX track/file names. No web-font CDN.
+- Charts and the default route map are drawn on `<canvas>`; **no runtime dependencies and no
+  network requests** — until you press **Show basemap**.
+- **Leaflet** is vendored in `vendor/leaflet/` (BSD-2-Clause) and loaded lazily; the basemap uses
+  keyless OpenStreetMap raster tiles (© OpenStreetMap contributors), fetched only when shown. So
+  your GPX files never leave the browser, and the only optional external request is map tiles.
 
 ## Roadmap
 

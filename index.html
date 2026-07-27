@@ -264,6 +264,16 @@
   }
   .tip .tk { opacity: .7; } .tip .ta { color: var(--a); } .tip .tb { color: var(--b); }
 
+  /* route map */
+  .chip[aria-pressed="true"] { background: var(--md-secondary-container); color: var(--md-on-secondary-container); border-color: transparent; }
+  .chip:disabled { opacity: .45; cursor: default; }
+  .map-shell { position: relative; width: 100%; }
+  #mapCanvas { display: block; width: 100%; border-radius: var(--r-s); background: var(--md-s); }
+  #leaflet { display: none; width: 100%; height: 360px; border-radius: var(--r-s); overflow: hidden; }
+  .leaflet-container { background: var(--md-s); font-family: inherit; font-size: 12px; }
+  .leaflet-container a { color: var(--md-primary); }
+  .map-note { margin: 10px 0 0; font-size: 12px; color: var(--md-on-surface-variant); }
+
   /* climbs */
   .climbs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   @media (max-width: 720px) { .climbs-grid { grid-template-columns: 1fr; } }
@@ -437,6 +447,20 @@
     <div class="bd"><div class="chart-shell"><canvas id="profile" height="320"></canvas><div class="tip num" id="tip"></div></div></div>
   </div>
 
+  <!-- map -->
+  <div class="card">
+    <div class="hd"><h2 class="t-title-m" data-i18n="mapTitle">Route map</h2>
+      <button type="button" class="chip" id="basemapBtn" aria-pressed="false">Show basemap</button>
+    </div>
+    <div class="bd">
+      <div class="map-shell">
+        <canvas id="mapCanvas" height="360"></canvas>
+        <div id="leaflet"></div>
+      </div>
+      <p class="map-note" data-i18n="mapNote"></p>
+    </div>
+  </div>
+
   <!-- sensitivity -->
   <div class="card">
     <div class="hd"><h2 class="t-title-m" data-i18n="sensTitle">Gain vs. threshold</h2><span class="hint" data-i18n="sensHint"></span></div>
@@ -486,6 +510,8 @@
       mDistance: "Distance", mAscent: "Ascent", mDescent: "Descent", mAscentPer: "Ascent",
       mAltRange: "Altitude range", mClimbs: "Named climbs",
       profTitle: "Elevation profile", legRamp: "≥8% ramp", loadTrack: "load a track",
+      mapTitle: "Route map", showBasemap: "Show basemap", hideBasemap: "Hide basemap",
+      mapNote: "Route shape is drawn locally. The basemap loads map tiles from OpenStreetMap — only when you show it.",
       sensTitle: "Gain vs. threshold", sensHint: "how far the “total ascent” claim depends on one knob",
       sensX: "deadband threshold →",
       climbsTitle: "Where the climbing lives", climbsHint: "climbs ≥20 m, placed at their real distance",
@@ -517,6 +543,8 @@
       mDistance: "Vzdálenost", mAscent: "Stoupání", mDescent: "Klesání", mAscentPer: "Stoupání",
       mAltRange: "Rozsah nadm. výšky", mClimbs: "Významná stoupání",
       profTitle: "Výškový profil", legRamp: "úsek ≥8 %", loadTrack: "načtěte trasu",
+      mapTitle: "Mapa trasy", showBasemap: "Zobrazit podkladovou mapu", hideBasemap: "Skrýt podkladovou mapu",
+      mapNote: "Tvar trasy se vykresluje lokálně. Podkladová mapa načítá dlaždice z OpenStreetMap — pouze když ji zobrazíte.",
       sensTitle: "Převýšení vs. práh", sensHint: "jak moc údaj o „celkovém převýšení“ závisí na jediném parametru",
       sensX: "práh necitlivosti →",
       climbsTitle: "Kde se stoupá", climbsHint: "stoupání ≥20 m, umístěná dle skutečné vzdálenosti",
@@ -623,7 +651,7 @@
   }
 
   // ---------------- state ----------------
-  const state = { A: null, B: null, rawA: null, rawB: null, metaA: null, metaB: null };
+  const state = { A: null, B: null, rawA: null, rawB: null, metaA: null, metaB: null, geoA: null, geoB: null };
   const $ = id => document.getElementById(id);
 
   // ---------------- static i18n ----------------
@@ -638,6 +666,7 @@
     renderDropLabels();
     updateKnobLabels();
     updateStatHint();
+    updateBasemapBtn();
   }
   function renderDropLabels() {
     for (const slot of ["A", "B"]) {
@@ -753,8 +782,9 @@
   $("profile").addEventListener("mousemove", ev => {
     if (!profGeo) return;
     const g = profGeo, rect = ev.currentTarget.getBoundingClientRect(), px = ev.clientX - rect.left;
-    if (px < g.pad.l || px > g.w - g.pad.r) { tip.style.opacity = 0; drawProfile(); return; }
+    if (px < g.pad.l || px > g.w - g.pad.r) { tip.style.opacity = 0; drawProfile(); mapHoverKm = null; updateMapHover(); return; }
     const km = ((px - g.pad.l) / g.W) * g.maxD; drawProfile();
+    mapHoverKm = km; updateMapHover();
     const ctx = ev.currentTarget.getContext("2d");
     ctx.strokeStyle = css("--md-outline"); ctx.globalAlpha = .6; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(px, g.pad.t); ctx.lineTo(px, g.pad.t + g.H); ctx.stroke(); ctx.globalAlpha = 1;
@@ -768,7 +798,7 @@
     tip.innerHTML = lines.join("&nbsp;&nbsp;"); tip.style.opacity = 1;
     let tx = px + 12; if (tx > g.w - 140) tx = px - 140; tip.style.left = tx + "px"; tip.style.top = (g.pad.t + 6) + "px";
   });
-  $("profile").addEventListener("mouseleave", () => { tip.style.opacity = 0; drawProfile(); });
+  $("profile").addEventListener("mouseleave", () => { tip.style.opacity = 0; drawProfile(); mapHoverKm = null; updateMapHover(); });
 
   function drawSens() {
     const cv = $("sens"), setup = setupCanvas(cv, 240);
@@ -804,6 +834,112 @@
     }).join("");
   }
 
+  // ---------------- route map (offline canvas by default, opt-in OSM basemap) ----------------
+  function buildGeo(track) {
+    const lat = track.pts.map(p => p.lat), lon = track.pts.map(p => p.lon), cum = [0];
+    for (let i = 1; i < track.pts.length; i++) cum.push(cum[i - 1] + haversine(lat[i - 1], lon[i - 1], lat[i], lon[i]));
+    return { lat, lon, cum };
+  }
+  function geoAt(geo, meters) {
+    const c = geo.cum, n = c.length;
+    if (meters <= 0) return { lat: geo.lat[0], lon: geo.lon[0] };
+    if (meters >= c[n - 1]) return { lat: geo.lat[n - 1], lon: geo.lon[n - 1] };
+    let lo = 0, hi = n - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (c[m] < meters) lo = m; else hi = m; }
+    const tt = (meters - c[lo]) / (c[hi] - c[lo] || 1);
+    return { lat: geo.lat[lo] + (geo.lat[hi] - geo.lat[lo]) * tt, lon: geo.lon[lo] + (geo.lon[hi] - geo.lon[lo]) * tt };
+  }
+  const merc = (lat, lon) => ({ x: lon * Math.PI / 180, y: Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360)) });
+
+  let mapHoverKm = null;
+  function drawMapCanvas() {
+    const cv = $("mapCanvas"), setup = setupCanvas(cv, 360); if (!setup) return; const { ctx, w, h } = setup;
+    const geos = [["A", state.geoA], ["B", state.geoB]].filter(x => x[1]);
+    if (!geos.length) { softMsg(ctx, w, h, t("loadTrack")); return; }
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    const proj = geos.map(([k, g]) => {
+      const pts = g.lat.map((la, i) => merc(la, g.lon[i]));
+      for (const p of pts) { if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x; if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y; }
+      return { k, pts };
+    });
+    const pad = 18, W = w - 2 * pad, H = h - 2 * pad, dx = maxX - minX || 1e-6, dy = maxY - minY || 1e-6;
+    const scale = Math.min(W / dx, H / dy);
+    const offX = pad + (W - dx * scale) / 2, offY = pad + (H - dy * scale) / 2;
+    const X = x => offX + (x - minX) * scale, Y = y => offY + (maxY - y) * scale;
+    for (const { k, pts } of proj) {
+      ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.lineWidth = 2.5; ctx.strokeStyle = css(k === "A" ? "--a" : "--b");
+      ctx.beginPath(); pts.forEach((p, i) => { const x = X(p.x), y = Y(p.y); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
+      ctx.fillStyle = css(k === "A" ? "--a" : "--b");
+      for (const idx of [0, pts.length - 1]) { ctx.beginPath(); ctx.arc(X(pts[idx].x), Y(pts[idx].y), 4, 0, 7); ctx.fill(); }
+    }
+    if (mapHoverKm != null) {
+      for (const [k, g] of geos) {
+        const p = geoAt(g, mapHoverKm * 1000), m = merc(p.lat, p.lon);
+        ctx.fillStyle = css(k === "A" ? "--a" : "--b"); ctx.strokeStyle = css("--md-surface"); ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(X(m.x), Y(m.y), 5.5, 0, 7); ctx.fill(); ctx.stroke();
+      }
+    }
+  }
+
+  let leafletReq = null, basemapOn = false, lmap = null, lInit = false, lRoutes = [], lMarkers = {};
+  function loadLeaflet() {
+    if (window.L) return Promise.resolve();
+    if (leafletReq) return leafletReq;
+    leafletReq = new Promise((res, rej) => {
+      const link = document.createElement("link"); link.rel = "stylesheet"; link.href = "vendor/leaflet/leaflet.css"; document.head.appendChild(link);
+      const s = document.createElement("script"); s.src = "vendor/leaflet/leaflet.js"; s.onload = () => res(); s.onerror = () => rej(new Error("leaflet failed to load")); document.head.appendChild(s);
+    });
+    return leafletReq;
+  }
+  function rebuildLeafletRoutes() {
+    if (!lmap) return;
+    lRoutes.forEach(r => lmap.removeLayer(r)); lRoutes = [];
+    let bounds = null;
+    for (const [k, g] of [["A", state.geoA], ["B", state.geoB]]) {
+      if (!g) continue;
+      const pl = L.polyline(g.lat.map((la, i) => [la, g.lon[i]]), { color: css(k === "A" ? "--a" : "--b"), weight: 4, opacity: .9 }).addTo(lmap);
+      lRoutes.push(pl); bounds = bounds ? bounds.extend(pl.getBounds()) : pl.getBounds();
+    }
+    if (bounds) lmap.fitBounds(bounds, { padding: [24, 24] });
+  }
+  function updateLeafletMarker() {
+    if (!lmap) return;
+    for (const [k, g] of [["A", state.geoA], ["B", state.geoB]]) {
+      const show = g && mapHoverKm != null;
+      if (!show) { if (lMarkers[k]) { lmap.removeLayer(lMarkers[k]); delete lMarkers[k]; } continue; }
+      const p = geoAt(g, mapHoverKm * 1000);
+      if (lMarkers[k]) lMarkers[k].setLatLng([p.lat, p.lon]);
+      else lMarkers[k] = L.circleMarker([p.lat, p.lon], { radius: 6, color: "#fff", weight: 2, fillColor: css(k === "A" ? "--a" : "--b"), fillOpacity: 1 }).addTo(lmap);
+    }
+  }
+  async function initLeaflet() {
+    await loadLeaflet();
+    lmap = L.map("leaflet", { zoomControl: true });
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" }).addTo(lmap);
+    lInit = true; rebuildLeafletRoutes();
+  }
+  function updateBasemapBtn() { $("basemapBtn").textContent = basemapOn ? t("hideBasemap") : t("showBasemap"); }
+  async function toggleBasemap() {
+    basemapOn = !basemapOn;
+    $("mapCanvas").style.display = basemapOn ? "none" : "block";
+    $("leaflet").style.display = basemapOn ? "block" : "none";
+    $("basemapBtn").setAttribute("aria-pressed", String(basemapOn));
+    updateBasemapBtn();
+    if (!basemapOn) { drawMapCanvas(); return; }
+    try {
+      if (!lInit) await initLeaflet(); else rebuildLeafletRoutes();
+      setTimeout(() => { if (lmap) { lmap.invalidateSize(); rebuildLeafletRoutes(); } }, 60);
+    } catch (e) {
+      basemapOn = false; $("mapCanvas").style.display = "block"; $("leaflet").style.display = "none";
+      $("basemapBtn").setAttribute("aria-pressed", "false"); updateBasemapBtn(); drawMapCanvas();
+    }
+  }
+  function renderMap() {
+    $("basemapBtn").disabled = !(state.geoA || state.geoB);
+    if (lInit) rebuildLeafletRoutes();
+    drawMapCanvas();
+  }
+  function updateMapHover() { if (basemapOn && lmap) updateLeafletMarker(); else drawMapCanvas(); }
+
   // ---------------- orchestration ----------------
   function renderAll() { renderStats(); drawProfile(); drawSens(); renderClimbs(); updateStatHint(); }
   function recompute() { state.A = state.rawA ? process(state.rawA) : null; state.B = state.rawB ? process(state.rawB) : null; renderAll(); }
@@ -825,8 +961,8 @@
   function loadFile(file, slot) {
     const reader = new FileReader();
     reader.onload = () => {
-      try { const track = parseGPX(reader.result); state["raw" + slot] = track; state["meta" + slot] = { title: track.name || file.name, file: file.name, pts: track.pts.length }; renderDropLabels(); recompute(); }
-      catch (e) { state["meta" + slot] = null; state["raw" + slot] = null; $("name" + slot).textContent = t("readErr"); $("sub" + slot).textContent = file.name; recompute(); }
+      try { const track = parseGPX(reader.result); state["raw" + slot] = track; state["geo" + slot] = buildGeo(track); state["meta" + slot] = { title: track.name || file.name, file: file.name, pts: track.pts.length }; renderDropLabels(); recompute(); renderMap(); }
+      catch (e) { state["meta" + slot] = state["raw" + slot] = state["geo" + slot] = null; $("name" + slot).textContent = t("readErr"); $("sub" + slot).textContent = file.name; recompute(); renderMap(); }
     };
     reader.readAsText(file);
   }
@@ -844,10 +980,11 @@
   // remove Route B (so a single track can be inspected on its own)
   $("clearB").addEventListener("click", e => {
     e.stopPropagation();
-    state.rawB = state.metaB = state.B = null;
+    state.rawB = state.metaB = state.B = state.geoB = null;
     $("fileB").value = "";
-    renderDropLabels(); recompute();
+    renderDropLabels(); recompute(); renderMap();
   });
+  $("basemapBtn").addEventListener("click", toggleBasemap);
 
   // (i) info tooltips: hover is CSS-only; click/tap toggles (touch devices have no hover)
   const infoDots = [...document.querySelectorAll(".info-dot")];
@@ -878,15 +1015,19 @@
     $("langGroup").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.lang === lang)));
   }
 
-  let rz; window.addEventListener("resize", () => { drawProfile(); drawSens(); clearTimeout(rz); rz = setTimeout(() => { drawProfile(); drawSens(); }, 120); });
+  let rz; window.addEventListener("resize", () => {
+    drawProfile(); drawSens(); drawMapCanvas(); if (basemapOn && lmap) lmap.invalidateSize();
+    clearTimeout(rz); rz = setTimeout(() => { drawProfile(); drawSens(); drawMapCanvas(); }, 120);
+  });
   const mq = window.matchMedia("(prefers-color-scheme: dark)");
-  mq.addEventListener && mq.addEventListener("change", () => { drawProfile(); drawSens(); });
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawProfile(); drawSens(); });
+  mq.addEventListener && mq.addEventListener("change", () => { drawProfile(); drawSens(); drawMapCanvas(); if (basemapOn && lmap) rebuildLeafletRoutes(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawProfile(); drawSens(); drawMapCanvas(); });
 
   // init
   syncToggleUI();
   applyStatic();
   recompute();
+  renderMap();
 })();
 </script>
 </body>

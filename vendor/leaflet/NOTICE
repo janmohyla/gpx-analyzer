@@ -1,0 +1,12 @@
+Leaflet
+Copyright (c) 2010-2024, Volodymyr Agafonkin
+Copyright (c) 2010-2011, CloudMade
+All rights reserved.
+
+Leaflet is distributed under the BSD 2-Clause "Simplified" License.
+Full text: https://github.com/Leaflet/Leaflet/blob/main/LICENSE
+
+Vendored here (leaflet.js, leaflet.css, images/) so the basemap works without a
+CDN. Version 1.9.4. Map tiles shown via the basemap are © OpenStreetMap
+contributors (https://www.openstreetmap.org/copyright) and are fetched from
+OpenStreetMap's tile servers only when the user enables the basemap.
