@@ -210,7 +210,7 @@
   .drop .sub { font-size: 12px; color: var(--md-on-surface-variant); }
 
   /* knobs */
-  .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; position: relative; z-index: 1; }
   @media (max-width: 680px) { .controls { grid-template-columns: 1fr; } }
   .knob { display: flex; flex-direction: column; gap: 8px; }
   .knob .k-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
@@ -550,7 +550,7 @@
       exportPdf: "PDF", pdfWorking: "Building…", pdfError: "Sorry — the PDF couldn’t be generated.", exportPng: "Download as PNG",
       sensTitle: "Gain vs. threshold", sensHint: "how far the “total ascent” claim depends on one knob",
       sensX: "deadband threshold →",
-      climbsTitle: "Where the climbing lives", climbsHint: "climbs ≥20 m, placed at their real distance",
+      climbsTitle: "Climbs", climbsHint: "climbs ≥20 m, placed at their real distance",
       unnamed: "unnamed", noClimbs: "no climbs above the cut-off", avg: "avg",
       footTitle: "Reading the numbers honestly.",
       foot1: "Elevation in exported GPX is often quantised to whole metres and draped over a smooth DEM, so raw gain under-counts; a densely-recorded device track with a small deadband over-counts. Same hill, different arithmetic.",
@@ -584,7 +584,7 @@
       exportPdf: "PDF", pdfWorking: "Vytvářím…", pdfError: "Omlouváme se — PDF se nepodařilo vytvořit.", exportPng: "Stáhnout jako PNG",
       sensTitle: "Převýšení vs. práh", sensHint: "jak moc údaj o „celkovém převýšení“ závisí na jediném parametru",
       sensX: "práh necitlivosti →",
-      climbsTitle: "Kde se stoupá", climbsHint: "stoupání ≥20 m, umístěná dle skutečné vzdálenosti",
+      climbsTitle: "Stoupání", climbsHint: "stoupání ≥20 m, umístěná dle skutečné vzdálenosti",
       unnamed: "bez názvu", noClimbs: "žádná stoupání nad prahovou hodnotou", avg: "prům.",
       footTitle: "Jak čísla číst poctivě.",
       foot1: "Výška v exportovaném GPX bývá zaokrouhlena na celé metry a odečtena z hladkého DEM, takže surové převýšení bývá podhodnocené; hustě zaznamenaná stopa z přístroje s malou necitlivostí je naopak nadhodnocená. Stejný kopec, jiná matematika.",
@@ -995,12 +995,20 @@
   }
   function renderToCanvas(core, w, h, scale, bg) {
     scale = scale || 2.5;
+    if (bg === undefined) bg = "--md-s-low";
     const cv = document.createElement("canvas");
     cv.width = Math.round(w * scale); cv.height = Math.round(h * scale);
     const ctx = cv.getContext("2d"); ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    ctx.fillStyle = css(bg || "--md-s-low") || "#fff"; ctx.fillRect(0, 0, w, h);
+    const fill = bg == null ? null : (bg[0] === "#" ? bg : css(bg));
+    if (fill) { ctx.fillStyle = fill; ctx.fillRect(0, 0, w, h); }
     core(ctx, w, h);
     return cv;
+  }
+  // render exports with light-theme colours (readable on white PDF pages) regardless of screen theme
+  async function withLightThemeAsync(fn) {
+    const root = document.documentElement, prev = root.getAttribute("data-theme");
+    root.setAttribute("data-theme", "light");
+    try { return await fn(); } finally { if (prev) root.setAttribute("data-theme", prev); else root.removeAttribute("data-theme"); }
   }
   function downloadBlob(blob, name) {
     const url = URL.createObjectURL(blob);
@@ -1102,9 +1110,9 @@
       } catch (e) { res(null); }
     });
   }
-  async function mapExportCanvas() {
+  async function mapExportCanvas(bg) {
     if (basemapOn && lmap) { const c = await compositeBasemap(); if (c) return c; }
-    return renderToCanvas((ctx, w, h) => drawMapInto(ctx, w, h, false), EX.map[0], EX.map[1], 2.5);
+    return renderToCanvas((ctx, w, h) => drawMapInto(ctx, w, h, false), EX.map[0], EX.map[1], 2.5, bg);
   }
 
   function exportProfilePng() { if (!(state.A || state.B)) return; downloadCanvas(renderToCanvas((c, w, h) => drawProfileInto(c, w, h, false), EX.profile[0], EX.profile[1], 2.5), fileBase() + "-elevation.png"); }
@@ -1124,6 +1132,15 @@
     btn.disabled = true; span.textContent = t("pdfWorking");
     try {
       await loadJsPDF();
+      // pre-render every section on white, using light-theme colours (clean on white pages)
+      const parts = await withLightThemeAsync(async () => ({
+        header: renderToCanvas(drawHeaderInto, 1120, 74, 2, "#ffffff"),
+        table: renderToCanvas(drawTableInto, 1120, tableExportHeight(), 2, "#ffffff"),
+        profile: renderToCanvas((c, w, h) => drawProfileInto(c, w, h, false), EX.profile[0], EX.profile[1], 2, "#ffffff"),
+        map: await mapExportCanvas("#ffffff"),
+        sens: renderToCanvas(drawSensInto, EX.sens[0], EX.sens[1], 2, "#ffffff"),
+        climbs: renderToCanvas(drawClimbsInto, 1120, climbsExportHeight(), 2, "#ffffff")
+      }));
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
       const W = 210, H = 297, M = 12, cw = W - 2 * M; let y = M;
@@ -1133,19 +1150,25 @@
         if (y + ih > H - M) { doc.addPage(); y = M; }
         doc.addImage(cv.toDataURL("image/png"), "PNG", M, y, iw, ih, undefined, "FAST"); y += ih + (gap == null ? 4 : gap);
       };
-      const titleStrip = title => renderToCanvas((ctx, w, h) => { ctx.fillStyle = css("--md-on-surface"); ctx.font = "700 26px Roboto, sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(title, 6, h / 2); }, 1120, 38, 2, "--md-surface");
-      const section = async (title, cvP, gap) => {
-        const cv = await cvP; if (!cv) return;
+      // section heading: transparent background, dark text + hairline rule (theme-independent)
+      const titleStrip = title => renderToCanvas((ctx, w, h) => {
+        ctx.fillStyle = "#1a231d"; ctx.font = "700 25px Roboto, sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic"; ctx.fillText(title, 2, 24);
+        ctx.strokeStyle = "#d6dccf"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(2, h - 2); ctx.lineTo(w - 2, h - 2); ctx.stroke();
+      }, 1120, 40, 2, "#ffffff");
+      const section = (title, cv, gap) => {
+        if (!cv) return;
         const ts = titleStrip(title), tH = cw * (ts.height / ts.width), iH = cw * (cv.height / cv.width);
         if (y + tH + 2 + Math.min(iH, H - 2 * M) > H - M) { doc.addPage(); y = M; }
-        place(ts, 1); place(cv, gap);
+        place(ts, 2); place(cv, gap);
       };
-      place(renderToCanvas(drawHeaderInto, 1120, 78, 2, "--md-surface"), 4);
-      await section(t("compTitle"), Promise.resolve(renderToCanvas(drawTableInto, 1120, tableExportHeight(), 2, "--md-surface")), 7);
-      await section(t("profTitle"), Promise.resolve(renderToCanvas((c, w, h) => drawProfileInto(c, w, h, false), EX.profile[0], EX.profile[1], 2)), 7);
-      await section(t("mapTitle"), mapExportCanvas(), 7);
-      await section(t("sensTitle"), Promise.resolve(renderToCanvas(drawSensInto, EX.sens[0], EX.sens[1], 2)), 7);
-      await section(t("climbsTitle"), Promise.resolve(renderToCanvas(drawClimbsInto, 1120, climbsExportHeight(), 2)), 7);
+      place(parts.header, 5);
+      section(t("compTitle"), parts.table, 8);
+      section(t("profTitle"), parts.profile, 8);
+      section(t("mapTitle"), parts.map, 8);
+      section(t("sensTitle"), parts.sens, 8);
+      section(t("climbsTitle"), parts.climbs, 8);
+      const pages = doc.getNumberOfPages();
+      for (let i = 1; i <= pages; i++) { doc.setPage(i); doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(150, 150, 150); doc.text(`${i} / ${pages}`, W - M, H - 6, { align: "right" }); }
       doc.save(fileBase() + "-report.pdf");
     } catch (e) { console.error(e); alert(t("pdfError")); }
     finally { btn.disabled = false; span.textContent = orig; }
