@@ -42,8 +42,7 @@ it samples more densely, and it uses a smaller deadband — all three push the n
   the *routes*, not the *apps*.
 - Three live knobs — **resample spacing**, **smoothing window**, **deadband threshold** — plus
   presets (`Raw`, `Balanced`, `Garmin-ish`, `Mapy-ish`).
-- **Elevation profile** overlay with ≥8% ramps highlighted and a hover crosshair.
-- **Gain-vs-threshold** sensitivity chart: see how fragile the "total ascent" claim is to one knob.
+- **Elevation profile** overlay with ≥8% ramps highlighted, axis units, and a hover crosshair.
 - **Climb distribution**: named climbs (≥20 m) placed at their real distance, coloured by gradient.
 - **Route map**: both routes drawn locally as a shape (offline, no requests) so you can see where
   the alternatives diverge, with an opt-in **Show basemap** button that lazy-loads an

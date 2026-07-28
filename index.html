@@ -494,12 +494,6 @@
     </div>
   </div>
 
-  <!-- sensitivity -->
-  <div class="card">
-    <div class="hd"><h2 class="t-title-m" data-i18n="sensTitle">Gain vs. threshold</h2><span class="hint" data-i18n="sensHint"></span></div>
-    <div class="bd"><div class="chart-shell"><canvas id="sens" height="240"></canvas></div></div>
-  </div>
-
   <!-- climbs -->
   <div class="card">
     <div class="hd"><h2 class="t-title-m" data-i18n="climbsTitle">Where the climbing lives</h2>
@@ -553,8 +547,6 @@
       mapTitle: "Route map", showBasemap: "Show basemap", hideBasemap: "Hide basemap",
       mapNote: "Route shape is drawn locally. The basemap loads map tiles from OpenStreetMap — only when you show it.",
       exportPdf: "PDF", pdfWorking: "Building…", pdfError: "Sorry — the PDF couldn’t be generated.", exportPng: "Download as PNG",
-      sensTitle: "Gain vs. threshold", sensHint: "how far the “total ascent” claim depends on one knob",
-      sensX: "deadband threshold →",
       climbsTitle: "Climbs", climbsHint: "climbs ≥20 m, placed at their real distance",
       unnamed: "unnamed", noClimbs: "no climbs above the cut-off", avg: "avg",
       footTitle: "Reading the numbers honestly.",
@@ -587,8 +579,6 @@
       mapTitle: "Mapa trasy", showBasemap: "Zobrazit podkladovou mapu", hideBasemap: "Skrýt podkladovou mapu",
       mapNote: "Tvar trasy se vykresluje lokálně. Podkladová mapa načítá dlaždice z OpenStreetMap — pouze když ji zobrazíte.",
       exportPdf: "PDF", pdfWorking: "Vytvářím…", pdfError: "Omlouváme se — PDF se nepodařilo vytvořit.", exportPng: "Stáhnout jako PNG",
-      sensTitle: "Převýšení vs. práh", sensHint: "jak moc údaj o „celkovém převýšení“ závisí na jediném parametru",
-      sensX: "práh necitlivosti →",
       climbsTitle: "Stoupání", climbsHint: "stoupání ≥20 m, umístěná dle skutečné vzdálenosti",
       unnamed: "bez názvu", noClimbs: "žádná stoupání nad prahovou hodnotou", avg: "prům.",
       footTitle: "Jak čísla číst poctivě.",
@@ -783,7 +773,7 @@
   function drawProfileInto(ctx, w, h, interactive) {
     const tracks = [state.A, state.B].filter(Boolean);
     if (!tracks.length) { if (interactive) profGeo = null; softMsg(ctx, w, h, t("loadTrack")); return; }
-    const pad = { l: 52, r: 14, t: 14, b: 26 }, W = w - pad.l - pad.r, H = h - pad.t - pad.b;
+    const pad = { l: 54, r: 30, t: 22, b: 26 }, W = w - pad.l - pad.r, H = h - pad.t - pad.b;
     const maxD = Math.max(...tracks.map(x => x.distKm));
     let eMin = Math.min(...tracks.map(x => x.eMin)), eMax = Math.max(...tracks.map(x => x.eMax));
     const ep = Math.max(10, (eMax - eMin) * 0.08); eMin -= ep; eMax += ep;
@@ -797,9 +787,12 @@
       ctx.globalAlpha = .55; ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke(); ctx.globalAlpha = 1;
       ctx.textAlign = "right"; ctx.fillText(nf(md), pad.l - 6, y);
     }
+    // axis units: elevation at the top of the y-axis, distance at the right end of the x-axis
+    ctx.textAlign = "right"; ctx.textBaseline = "alphabetic"; ctx.fillText(eleU(), pad.l - 6, pad.t - 8);
     ctx.textAlign = "center"; ctx.textBaseline = "top";
     const maxDd = uDist(maxD), stepDd = niceStep(maxDd / 8);
     for (let kd = 0; kd <= maxDd + 1e-6; kd += stepDd) { const km = unit === "imperial" ? kd / KM2MI : kd; ctx.fillText(nf(kd), X(km), h - pad.b + 6); }
+    ctx.textAlign = "left"; ctx.fillText(distU(), w - pad.r + 6, h - pad.b + 6);
 
     const cA = css("--a"), cB = css("--b"), sA = css("--a-soft"), sB = css("--b-soft"), st = css("--steep");
     for (const [key, tr] of [["A", state.A], ["B", state.B]]) {
@@ -848,27 +841,6 @@
   });
   $("profile").addEventListener("mouseleave", () => { tip.style.opacity = 0; drawProfile(); mapHoverKm = null; updateMapHover(); });
 
-  function drawSens() {
-    const setup = setupCanvas($("sens"), 240); if (!setup) return;
-    drawSensInto(setup.ctx, setup.w, setup.h);
-  }
-  function drawSensInto(ctx, w, h) {
-    const tracks = [["A", state.A], ["B", state.B]].filter(x => x[1]);
-    if (!tracks.length) { softMsg(ctx, w, h, t("loadTrack")); return; }
-    const ths = []; for (let x = 0; x <= 10; x += 0.5) ths.push(x);
-    const series = tracks.map(([k, tr]) => ({ k, vals: ths.map(x => uEle(gainLoss(tr.es, x).gain)) }));
-    const maxG = Math.max(...series.flatMap(s => s.vals), 1);
-    const pad = { l: 56, r: 14, t: 14, b: 34 }, W = w - pad.l - pad.r, H = h - pad.t - pad.b;
-    const X = th => pad.l + (th / 10) * W, Y = g => pad.t + H - (g / maxG) * H;
-    ctx.font = "11px Roboto, sans-serif"; ctx.strokeStyle = css("--md-outline-variant"); ctx.fillStyle = css("--md-on-surface-variant");
-    const gStep = niceStep(maxG / 4); ctx.textAlign = "right"; ctx.textBaseline = "middle";
-    for (let g = 0; g <= maxG; g += gStep) { const y = Y(g); ctx.globalAlpha = .55; ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke(); ctx.globalAlpha = 1; ctx.fillText(nf(g), pad.l - 6, y); }
-    ctx.textAlign = "center"; ctx.textBaseline = "top";
-    for (let x = 0; x <= 10; x += 2) ctx.fillText(nf(uEle(x)) + " " + eleU(), X(x), h - pad.b + 6);
-    ctx.fillText(t("sensX"), w / 2, h - 12);
-    for (const s of series) { ctx.strokeStyle = css(s.k === "A" ? "--a" : "--b"); ctx.lineWidth = 2; ctx.beginPath(); s.vals.forEach((g, i) => { const x = X(ths[i]), y = Y(g); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); }
-    ctx.strokeStyle = css("--md-outline"); ctx.globalAlpha = .6; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(X(opts.thresh), pad.t); ctx.lineTo(X(opts.thresh), pad.t + H); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
-  }
 
   function gradColor(g) { const stops = [[3, "#8a9a3f"], [4, "#c8a12e"], [5, "#d98a2b"], [6, "#d9662b"], [7, "#cf4b2f"], [8, "#c0303f"]]; let c = stops[0][1]; for (const [g0, col] of stops) if (g >= g0) c = col; return c; }
   function renderClimbs() {
@@ -993,7 +965,7 @@
   function updateMapHover() { if (basemapOn && lmap) updateLeafletMarker(); else drawMapCanvas(); }
 
   // ---------------- export (PNG per section + A4 PDF report) ----------------
-  const EX = { profile: [1120, 340], sens: [1120, 260], map: [720, 640] };
+  const EX = { profile: [1120, 340], map: [720, 640] };
   function roundRect(ctx, x, y, w, h, r) {
     if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); return; }
     ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
@@ -1143,7 +1115,6 @@
         table: renderToCanvas(drawTableInto, 1120, tableExportHeight(), 2, "#ffffff"),
         profile: renderToCanvas((c, w, h) => drawProfileInto(c, w, h, false), EX.profile[0], EX.profile[1], 2, "#ffffff"),
         map: await mapExportCanvas("#ffffff"),
-        sens: renderToCanvas(drawSensInto, EX.sens[0], EX.sens[1], 2, "#ffffff"),
         climbs: renderToCanvas(drawClimbsInto, 1120, climbsExportHeight(), 2, "#ffffff")
       }));
       const { jsPDF } = window.jspdf;
@@ -1170,7 +1141,6 @@
       section(t("compTitle"), parts.table, 8);
       section(t("profTitle"), parts.profile, 8);
       section(t("mapTitle"), parts.map, 8);
-      section(t("sensTitle"), parts.sens, 8);
       section(t("climbsTitle"), parts.climbs, 8);
       const pages = doc.getNumberOfPages();
       for (let i = 1; i <= pages; i++) { doc.setPage(i); doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(150, 150, 150); doc.text(`${i} / ${pages}`, W - M, H - 6, { align: "right" }); }
@@ -1185,7 +1155,7 @@
     $("pdfBtn").disabled = $("pngProfile").disabled = $("pngClimbs").disabled = !has;
     $("pngMap").disabled = !(state.geoA || state.geoB);
   }
-  function renderAll() { renderStats(); drawProfile(); drawSens(); renderClimbs(); updateStatHint(); updateExportButtons(); }
+  function renderAll() { renderStats(); drawProfile(); renderClimbs(); updateStatHint(); updateExportButtons(); }
   function recompute() { state.A = state.rawA ? process(state.rawA) : null; state.B = state.rawB ? process(state.rawB) : null; renderAll(); }
 
   // ---------------- wiring ----------------
@@ -1288,12 +1258,12 @@
   }
 
   let rz; window.addEventListener("resize", () => {
-    drawProfile(); drawSens(); drawMapCanvas(); if (basemapOn && lmap) lmap.invalidateSize();
-    clearTimeout(rz); rz = setTimeout(() => { drawProfile(); drawSens(); drawMapCanvas(); }, 120);
+    drawProfile(); drawMapCanvas(); if (basemapOn && lmap) lmap.invalidateSize();
+    clearTimeout(rz); rz = setTimeout(() => { drawProfile(); drawMapCanvas(); }, 120);
   });
   const mq = window.matchMedia("(prefers-color-scheme: dark)");
-  mq.addEventListener && mq.addEventListener("change", () => { drawProfile(); drawSens(); drawMapCanvas(); if (basemapOn && lmap) rebuildLeafletRoutes(); });
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawProfile(); drawSens(); drawMapCanvas(); });
+  mq.addEventListener && mq.addEventListener("change", () => { drawProfile(); drawMapCanvas(); if (basemapOn && lmap) rebuildLeafletRoutes(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawProfile(); drawMapCanvas(); });
 
   // init
   syncToggleUI();
