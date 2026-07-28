@@ -210,7 +210,7 @@
   .drop .sub { font-size: 12px; color: var(--md-on-surface-variant); }
 
   /* knobs */
-  .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; position: relative; z-index: 1; }
+  .controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
   @media (max-width: 680px) { .controls { grid-template-columns: 1fr; } }
   .knob { display: flex; flex-direction: column; gap: 8px; }
   .knob .k-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
@@ -254,9 +254,12 @@
   .info-dot { width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--md-outline); background: transparent; color: var(--md-on-surface-variant); font: 700 10px/1 Georgia, "Times New Roman", serif; cursor: pointer; padding: 0; display: grid; place-items: center; font-style: italic; }
   .info-dot:hover, .info-dot[aria-expanded="true"] { border-color: var(--md-primary); color: var(--md-primary); }
   .info-dot:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
-  .info-pop { position: absolute; top: calc(100% + 8px); left: 0; z-index: 20; width: min(240px, 78vw); padding: 10px 12px; background: var(--md-s-highest); color: var(--md-on-surface); border: 1px solid var(--md-outline-variant); border-radius: var(--r-s); box-shadow: var(--shadow-2); font-size: 12px; font-weight: 400; line-height: 1.45; opacity: 0; visibility: hidden; transform: translateY(-4px); transition: opacity .12s, transform .12s, visibility .12s; pointer-events: none; }
-  .info-pop.right { left: auto; right: 0; }
-  .k-info:hover .info-pop, .k-info:focus-within .info-pop, .info-dot[aria-expanded="true"] + .info-pop { opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
+  /* the inline .info-pop is now just a hidden text holder (i18n target); the visible
+     tooltip is #infoFloat, a body-level fixed layer that no stacking context can trap */
+  .info-pop { display: none; }
+  #infoFloat { position: fixed; z-index: 2147483000; max-width: 260px; padding: 10px 12px; background: var(--md-s-highest); color: var(--md-on-surface); border: 1px solid var(--md-outline-variant); border-radius: var(--r-s); box-shadow: var(--shadow-2); font-size: 12px; font-weight: 400; line-height: 1.45; opacity: 0; visibility: hidden; transform: translateY(-4px); transition: opacity .12s, transform .12s, visibility .12s; pointer-events: none; }
+  #infoFloat.show { opacity: 1; visibility: visible; transform: translateY(0); }
+  @media (prefers-reduced-motion: reduce) { #infoFloat { transition: none; } }
 
   /* stats */
   .stats { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; }
@@ -517,6 +520,8 @@
     </ul>
   </footer>
 </div>
+
+<div id="infoFloat" role="tooltip"></div>
 
 <script>
 "use strict";
@@ -1229,15 +1234,39 @@
   $("pngMap").addEventListener("click", exportMapPng);
   $("pngClimbs").addEventListener("click", exportClimbsPng);
 
-  // (i) info tooltips: hover is CSS-only; click/tap toggles (touch devices have no hover)
+  // (i) info tooltips — shown in #infoFloat, a body-level fixed layer, so they can never
+  // be trapped behind other UI by a stacking context (zoom / extensions / grid quirks).
+  const infoFloat = $("infoFloat");
   const infoDots = [...document.querySelectorAll(".info-dot")];
-  infoDots.forEach(btn => btn.addEventListener("click", e => {
-    e.stopPropagation();
-    const open = btn.getAttribute("aria-expanded") === "true";
-    infoDots.forEach(b => b.setAttribute("aria-expanded", "false"));
-    btn.setAttribute("aria-expanded", String(!open));
-  }));
-  document.addEventListener("click", () => infoDots.forEach(b => b.setAttribute("aria-expanded", "false")));
+  let infoOpen = null;
+  function positionInfo(dot) {
+    const r = dot.getBoundingClientRect();
+    infoFloat.style.left = "0px"; infoFloat.style.top = "0px"; // reset before measuring
+    const fw = infoFloat.offsetWidth, fh = infoFloat.offsetHeight;
+    const left = Math.max(8, Math.min(r.left + r.width / 2 - fw / 2, window.innerWidth - fw - 8));
+    let top = r.bottom + 8;
+    if (top + fh > window.innerHeight - 8) top = Math.max(8, r.top - fh - 8); // flip above if no room below
+    infoFloat.style.left = left + "px"; infoFloat.style.top = top + "px";
+  }
+  function showInfo(dot) {
+    const pop = dot.parentNode.querySelector(".info-pop");
+    infoFloat.textContent = pop ? pop.textContent : "";
+    infoFloat.classList.add("show");
+    positionInfo(dot);
+    infoDots.forEach(b => b.setAttribute("aria-expanded", String(b === dot)));
+    infoOpen = dot;
+  }
+  function hideInfo() { if (!infoOpen) return; infoFloat.classList.remove("show"); infoDots.forEach(b => b.setAttribute("aria-expanded", "false")); infoOpen = null; }
+  infoDots.forEach(dot => {
+    dot.addEventListener("mouseenter", () => showInfo(dot));
+    dot.addEventListener("mouseleave", () => { if (infoOpen === dot) hideInfo(); });
+    dot.addEventListener("focus", () => showInfo(dot));
+    dot.addEventListener("blur", () => { if (infoOpen === dot) hideInfo(); });
+    dot.addEventListener("click", e => { e.stopPropagation(); infoOpen === dot ? hideInfo() : showInfo(dot); });
+  });
+  document.addEventListener("click", hideInfo);
+  window.addEventListener("scroll", hideInfo, true);
+  window.addEventListener("resize", hideInfo);
 
   // unit segmented
   $("unitGroup").addEventListener("click", e => {
