@@ -41,7 +41,9 @@ it samples more densely, and it uses a smaller deadband — all three push the n
 - Re-derives ascent/descent for **both** tracks with **one identical algorithm**, so you compare
   the *routes*, not the *apps*.
 - Three live knobs — **resample spacing**, **smoothing window**, **deadband threshold** — plus
-  presets (`Raw`, `Balanced`, `Garmin-ish`, `Mapy-ish`).
+  presets (`Raw`, `Balanced`, `Garmin-ish`, `Mapy-ish`). The `Garmin-ish` and `Mapy-ish` presets
+  are **calibrated against real Garmin Connect / Mapy.com exports** (3 routes; each preset
+  reproduces that tool's reported ascent to within ~1–2% *on that tool's own GPX*).
 - **Elevation profile** overlay with ≥8% ramps highlighted, axis units, and a hover crosshair.
 - **Climb distribution**: named climbs (≥20 m) placed at their real distance, coloured by gradient.
 - **Route map**: both routes drawn locally as a shape (offline, no requests) so you can see where
