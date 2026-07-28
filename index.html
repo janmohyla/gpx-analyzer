@@ -287,12 +287,12 @@
   /* route map */
   .chip[aria-pressed="true"] { background: var(--md-secondary-container); color: var(--md-on-secondary-container); border-color: transparent; }
   .chip:disabled { opacity: .45; cursor: default; }
-  .map-shell { position: relative; width: 100%; }
+  .map-shell { position: relative; width: 100%; max-width: 720px; margin: 0 auto; }
   #mapCanvas { display: block; width: 100%; border-radius: var(--r-s); background: var(--md-s); }
-  #leaflet { display: none; width: 100%; height: 360px; border-radius: var(--r-s); overflow: hidden; }
+  #leaflet { display: none; width: 100%; height: 640px; border-radius: var(--r-s); overflow: hidden; }
   .leaflet-container { background: var(--md-s); font-family: inherit; font-size: 12px; }
   .leaflet-container a { color: var(--md-primary); }
-  .map-note { margin: 10px 0 0; font-size: 12px; color: var(--md-on-surface-variant); }
+  .map-note { margin: 10px auto 0; max-width: 720px; font-size: 12px; color: var(--md-on-surface-variant); }
 
   /* climbs */
   .climbs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -484,7 +484,7 @@
     </div>
     <div class="bd">
       <div class="map-shell">
-        <canvas id="mapCanvas" height="360"></canvas>
+        <canvas id="mapCanvas" height="640"></canvas>
         <div id="leaflet"></div>
       </div>
       <p class="map-note" data-i18n="mapNote"></p>
@@ -896,7 +896,7 @@
 
   let mapHoverKm = null;
   function drawMapCanvas() {
-    const setup = setupCanvas($("mapCanvas"), 360); if (!setup) return;
+    const setup = setupCanvas($("mapCanvas"), 640); if (!setup) return;
     drawMapInto(setup.ctx, setup.w, setup.h, true);
   }
   function drawMapInto(ctx, w, h, showHover) {
@@ -988,7 +988,7 @@
   function updateMapHover() { if (basemapOn && lmap) updateLeafletMarker(); else drawMapCanvas(); }
 
   // ---------------- export (PNG per section + A4 PDF report) ----------------
-  const EX = { profile: [1120, 340], sens: [1120, 260], map: [960, 660] };
+  const EX = { profile: [1120, 340], sens: [1120, 260], map: [720, 640] };
   function roundRect(ctx, x, y, w, h, r) {
     if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); return; }
     ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
